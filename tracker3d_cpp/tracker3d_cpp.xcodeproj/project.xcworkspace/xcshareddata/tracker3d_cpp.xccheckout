@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>1ABECBCD-81AD-44BF-A578-01D8F9C395A5</string>
+	<key>IDESourceControlProjectName</key>
+	<string>tracker3d_cpp</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>D5CEA1D2-0CA8-4061-B8CE-B282C6DF0C50</key>
+		<string>https://github.com/rmorshea/niffte-tracker3d.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>tracker3d_cpp/tracker3d_cpp.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>D5CEA1D2-0CA8-4061-B8CE-B282C6DF0C50</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/rmorshea/niffte-tracker3d.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>D5CEA1D2-0CA8-4061-B8CE-B282C6DF0C50</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>D5CEA1D2-0CA8-4061-B8CE-B282C6DF0C50</string>
+			<key>IDESourceControlWCCName</key>
+			<string>niffte-tracker3d</string>
+		</dict>
+	</array>
+</dict>
+</plist>
