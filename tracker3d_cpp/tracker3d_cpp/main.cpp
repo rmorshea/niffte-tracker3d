@@ -12,40 +12,37 @@
 #include <vector>
 using namespace std;
 
+//utlity functions:
+
+
 class Voxel
-{
-//The basic data unit; represents pixels in 3 dimensions (two spatial and one temporal) and it's associated data.
-// <data_member(abbreviation): description>
-// chamberId(cId): a chamber identifier and isn't used much here.
-// rcbArray(rcb): contains three values corrisponding to coordinates; row (spatial), collumn(spatial), and bucket(temporal).
-// acdValue(adc): The adc value is the magnitude of the signal recorded
+{/*The basic data unit; represents pixels in 3 dimensions (two spatial and one temporal) and it's associated data.
+    <data_member(abbreviation): description>
+    voxStamp(vst): contains four values corrisponding to the chamber and coordinates of the voxel:
+        {chamber, row (spatial), collumn(spatial), and bucket(temporal)}.
+    acdValue(adc): The adc value is the magnitude of the signal recorded*/
 public:
-    Voxel(int cId, int rcb[3], int adc)
+    Voxel(int vst[4], int adc)
     {
-        chamberId = cId;
-        rcbArray = rcb;
+        voxStamp = vst;
         adcValue = adc;
     }
     
-    array<int,5> datReturn()
+    int *getVoxDat()
     {
-        array<int,5> dat;
-        for (int i; i<5; i++)
+        int stmpArray[5];
+        int* pStamp=stmpArray;
+        for (int i; i<4; i++)
         {
-            if (i==0)
-                {dat[i]=chamberId;}
-            if (i==4)
-                {dat[i]=adcValue;}
-            else
-                {dat[i]=rcbArray[i];}
+            pStamp[i] = voxStamp[i];
         }
-        return dat;
+        pStamp[4]=adcValue;
+        return pStamp;
     }
     
 private:
+    int *voxStamp;
     int adcValue;
-    int chamberId;
-    int *rcbArray;
 };
 
 
@@ -57,13 +54,16 @@ public:
         Id = eventId;
     }
     
-    void addVoxel(int array[5])
+    void addVoxel(int voxArray[5])
     {
-        int rcb[3] = {array[1],array[2],array[3]};
-        voxPortfolio.push_back(Voxel(array[0], rcb, array[4]));
+        int stamp[4] = {
+            voxArray[0],
+            voxArray[1],
+            voxArray[2],
+            voxArray[4]
+        };
+        voxPortfolio.push_back(Voxel(stamp, voxArray[5]));
     }
-    
-    
     
     
     
