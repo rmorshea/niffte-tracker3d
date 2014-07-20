@@ -113,41 +113,24 @@ public:
         }
         //Method to sift though possible neighbors and find those
         //which are present in voxPortfolio
-        vector<Voxel> voxSiftA;
-        vector<Voxel> voxSiftB = voxPortfolio;
-        for(int i; i<4; i++) {
-            if(i==0 or i==2) {
-                if(voxSiftB.size()!=0) {
-                    for(int j; i<voxSiftA.size(); j++) {
-                        for (int k; j<20; k++) {
-                            if(*voxPortfolio[j].voxStamp==pstmpN[4*j+i]) {
-                                voxSiftA.push_back(voxPortfolio[j]);
-                            }
+        
+        vector<Voxel> voxSift = voxPortfolio;
+        
+        for (int i=0; i<4; i++) {
+            if (voxSift.size()!=0) {
+                for (int j=0; j<voxSift.size(); j++) {
+                    for (int k=0; k<20; k++) {
+                        if (voxSift[j].voxStamp[i]==pstmpN[4*k+i]) {
+                            break;
+                        }
+                        else if (k==19) {
+                            voxSift.erase(voxSift.begin() + j);
                         }
                     }
                 }
-                else {
-                    return emptyBorder();
-                }
-                voxSiftB.clear();
-            }
-            if(i==1 or i==3) {
-                if(voxSiftA.size()!=0) {
-                    for(int j; i<voxSiftB.size(); j++) {
-                        for (int k; j<20; k++) {
-                            if(*voxPortfolio[j].voxStamp==pstmpN[4*j+i]) {
-                                voxSiftA.push_back(voxPortfolio[j]);
-                            }
-                        }
-                    }
-                }
-                voxSiftB.clear();
-            }
-            else {
-                return emptyBorder();
             }
         }
-        return voxSiftA;
+        return voxSift;
     }
     
 private:
@@ -218,66 +201,31 @@ int main(int argc, const char * argv[])
         }
     }
     
-    int vStamp[4] = {2,1,1,1};
-    vector<Voxel> voxPortfolio = {Voxel(vStamp,1)};
+    int vStamp1[4] = {2,4,2,3};
+    int vStamp2[4] = {2,1,2,1};
+    vector<Voxel> voxPortfolio = {Voxel(vStamp1,1),Voxel(vStamp2,1)};
     //test: voxel sifter for getNeighbors
-    vector<Voxel> voxSiftA;
-    vector<Voxel> voxSiftB = voxPortfolio;
+    vector<Voxel> voxSift = voxPortfolio;
     
-    for(int i=0; i<4; i++) {
-        if(i==0 or i==2) {
-            cout<<voxSiftB.size()<<"\n";
-            if(voxSiftB.size()!=0) {
-                for(int j=0; j<voxSiftB.size(); j++) {
-                    int k=0;
-                    cout<<voxSiftB[j].voxStamp[i]<<"=="<<pstmpN[4*k+i]<<"\n";
-                    if(voxSiftB[j].voxStamp[i]==pstmpN[4*k+i]) {
-                        voxSiftA.push_back(voxSiftB[j]);
+    for (int i=0; i<4; i++) {
+        if (voxSift.size()!=0) {
+            int j=0;
+            while (j<voxSift.size()) {
+                for (int k=0; k<20; k++) {
+                    cout<<voxSift[j].voxStamp[i]<<"=="<<pstmpN[4*k+i]<<"\n";
+                    if (voxSift[j].voxStamp[i]==pstmpN[4*k+i]) {
+                        j+=1;
+                        break;
                     }
-                    else {
-                        k+=1;
-                        while (voxSiftB[j].voxStamp[i]!=pstmpN[4*k+i]) {
-                            cout<<voxSiftB[j].voxStamp[i]<<"=="<<pstmpN[4*k+i]<<"\n";
-                            if(voxSiftB[j].voxStamp[i]==pstmpN[4*k+i]) {
-                                voxSiftA.push_back(voxSiftB[j]);
-                            }
-                            k+=1;
-                        }
+                    else if (k==19) {
+                        voxSift.erase(voxSift.begin() + j);
+                        cout<<"Erased\n";
+                        break;
                     }
                 }
-            }
-            else {
-                cout<<"NO NEIGHBORS\n";
+            cout<<j+1<<"-------\n";
             }
         }
-        voxSiftB.clear();
-        
-        if(i==1 or i==3) {
-            cout<<voxSiftA.size()<<"\n";
-            if(voxSiftA.size()!=0) {
-                for(int j=0; j<voxSiftA.size(); j++) {
-                    int k=0;
-                    cout<<voxSiftA[j].voxStamp[i]<<"=="<<pstmpN[4*k+i]<<"\n";
-                    
-                    if(voxSiftA[j].voxStamp[i]==pstmpN[4*k+i]) {
-                        voxSiftB.push_back(voxSiftB[j]);
-                    }
-                    else {
-                        k+=1;
-                        while (voxSiftA[j].voxStamp[i]!=pstmpN[4*k+i]) {
-                            cout<<voxSiftA[j].voxStamp[i]<<"=="<<pstmpN[4*k+i]<<"\n";
-                            if(voxSiftA[j].voxStamp[i]==pstmpN[4*k+i]) {
-                                voxSiftB.push_back(voxSiftA[j]);
-                            }
-                            k+=1;
-                        }
-                    }
-                }
-            }
-            else {
-                cout<<"NO NEIGHBORS\n";
-            }
-        }
-        voxSiftA.clear();
     }
+    cout<<voxSift.size()<<"\n";
 }
