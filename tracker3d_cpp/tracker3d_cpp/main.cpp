@@ -12,136 +12,137 @@
 #include <stdio.h>
 #include <array>
 #include <vector>
+#include <chrono>
+
 using namespace std;
-
-
 
 class Voxel
 {/*The basic data unit; represents pixels in 3 dimensions (two spatial and one temporal) and it's associated data.
-    <data_member(abbreviation): description>
-    voxStamp(stmp): contains four values corrisponding to the chamber and coordinates of the voxel:
-        {chamber, row (spatial), collumn(spatial), and bucket(temporal)}.
-    acdValue(adc): The adc value is the magnitude of the signal recorded*/
+  <data_member: description>
+  VRCB: an array of four values corrisponding to the volume and coordinates of the voxel:
+    {volume, row (spatial), collumn(spatial), and bucket(temporal)}.
+  ADC: The adc value is the magnitude of the signal recorded. */
 public:
-    
-    int *voxStamp;
-    int adcValue;
-    
-    Voxel(int stmp[4], int adc)
+    Voxel(int vol, int col, int row, int bkt, int adc)
     {
-        voxStamp = stmp;
-        adcValue = adc;
+        int vrcb[4] = {vol, col, row, bkt};
+        VRCB = vrcb;
+        ADC = adc;
+        
     }
     
-    int *getVoxDat()
-    {
-        int stmpArray[5];
-        int* pStamp=stmpArray;
-        for (int i; i<4; i++)
-        {
-            pStamp[i] = voxStamp[i];
-        }
-        pStamp[4]=adcValue;
-        return pStamp;
+    int* getVRCB() {
+        return VRCB;
     }
-//end class
+
+    int getADC() {
+        return ADC;
+    }
+    
+private:
+    int* VRCB;
+    int ADC;
 };
+
+
 
 class Event
 {
 public:
+    
     //Public Data Members:
-    int Id;
-    vector<Voxel> voxPortfolio;
-    vector<Voxel> trajectories;
-    vector<Voxel> orphans;
     
     //Constructor:
-    Event(int eventId, int voxArray[5]) {
-        Id = eventId;
-        this->addVoxel(voxArray);
+    Event(int eventId, int thresh) {
+        Id = eventId;         //give the event an Id number
+        gradThresh = thresh;    //initialize the gradient threshhold
     }
     
-    //PublicMemberFunction(1):
-    //adds a voxel to the public data member voxPortfolio.
-    void addVoxel(int voxArray[5]) {
-        int stamp[4] = {
-            voxArray[0],
-            voxArray[1],
-            voxArray[2],
-            voxArray[4]
-        };
-        voxPortfolio.push_back(Voxel(stamp, voxArray[5]));
-    }
-    
-    //PublicMemberFunction(2):
-    //using a specified voxStamp as a refernce point, a collection
-    //of its neighboring voxels is made and then returned. Handling
-    //the hexagonal geometry results in a maximum of 20 possible
-    //neighbors. A sifter then determines how many of those 20
-    //candidates are actually present in the public data member
-    //voxPortfolio.
-    vector<Voxel> getNeighbors(int voxStamp[4]) {
-        int stampNeighbors[80];
-        int *pstmpN= stampNeighbors;
-        
-        int transRule[3] = {-1,0,1};
-        int count=0;
-        
-        for(int i=0; i<3; i++) {
-            if (i!=1) {
-                pstmpN[4*count+0] = voxStamp[0];
-                pstmpN[4*count+3] = voxStamp[3]+transRule[i];
-                pstmpN[4*count+1] = voxStamp[1];
-                pstmpN[4*count+2] = voxStamp[2];
-                count+=1;
-            }
-            for(int j=0; j<3; j++) {
-                for(int k=0; k<2; k++) {
-                    pstmpN[4*count+3] = voxStamp[3]+transRule[i];
-                    pstmpN[4*count+1] = voxStamp[1]+transRule[j];
-                    if (voxStamp[1]%2 == 1) {
-                        pstmpN[4*count+2] = voxStamp[2]+transRule[k+1];
-                    }
-                    else {
-                        pstmpN[4*count+2] = voxStamp[2]+transRule[k];
-                    }
-                    pstmpN[4*count+0] = voxStamp[0];
-                    count+=1;
-                }
-            }
-        }
-        //Method to sift though possible neighbors and find those
-        //which are present in voxPortfolio
-        
-        vector<Voxel> voxSift = voxPortfolio;
-        
-        for (int i=0; i<4; i++) {
-            if (voxSift.size()!=0) {
-                for (int j=0; j<voxSift.size(); j++) {
-                    for (int k=0; k<20; k++) {
-                        if (voxSift[j].voxStamp[i]==pstmpN[4*k+i]) {
-                            break;
-                        }
-                        else if (k==19) {
-                            voxSift.erase(voxSift.begin() + j);
-                        }
-                    }
-                }
-            }
-        }
-        return voxSift;
+    /*PublicMemberFunction(1):
+    /adds a voxel to the public data member voxPortfolio.*/
+    void addVoxel(int vol, int col, int row, int bkt, int adc) {
+        voxPortfolio.push_back(Voxel(vol, col, row, bkt, adc));
     }
     
 private:
     
-    //PrivateMemberFunction(1):
-    vector<Voxel> emptyBorder() {
-        vector<Voxel> emptyNeighbors;
-        int emptyStamp[4];
-        emptyNeighbors.push_back(Voxel(emptyStamp,-1));
-        return emptyNeighbors;
+    int Id;
+    vector<Voxel> voxPortfolio;
+    
+    //Private Data Members:
+    int gradThresh;
+    
+    /*PrivateMemberFunction(1):
+     using a specified voxVRCB as a refernce point, a collection
+     of its neighboring voxels is made and then returned. Handling
+     the hexagonal geometry results in a maximum of 20 possible
+     neighbors. A sifter then determines how many of those 20
+     candidates are actually present in the public data member
+     voxPortfolio.*/
+    int* getNeighbors(int voxVRCB[4]) {
+        int neighborsVRCB[80]; //will contain coordinates to voxels adjacent to voxVRCB
+        int *pnVRCB= neighborsVRCB;
+        
+        int transRule[3] = {-1,0,1};
+        
+        /*using transRule, the position given by voxVRCB is translated
+         to adjecent voxels which are then saved to stampNeighbors.
+         Since the voxels exist in a hexagonal geometry it requires
+         some manipulation to fit them into cartesian coordinates.*/
+        int count=0;
+        for(int i=0; i<3; i++) {
+            if (i!=1) {
+                pnVRCB[4*count+0] = voxVRCB[0];
+                pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
+                pnVRCB[4*count+1] = voxVRCB[1];
+                pnVRCB[4*count+2] = voxVRCB[2];
+                count+=1;
+            }
+            for(int j=0; j<3; j++) {
+                for(int k=0; k<2; k++) {
+                    pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
+                    pnVRCB[4*count+1] = voxVRCB[1]+transRule[j];
+                    if (voxVRCB[1]%2 == 1) {
+                        pnVRCB[4*count+2] = voxVRCB[2]+transRule[k+1];
+                    }
+                    else {
+                        pnVRCB[4*count+2] = voxVRCB[2]+transRule[k];
+                    }
+                    pnVRCB[4*count+0] = voxVRCB[0];
+                    count+=1;
+                }
+            }
+        }
+        
+        /*Method to sift though possible neighbors and find those
+         which are present in voxPortfolio. If a voxel in voxPortfolio
+         is not a neighbor then its index in voxSift is turn to -1.
+         Otherwise the index remains untouched and can be used to call
+         the voxel from voxPortfolio. */
+        vector<Voxel>::size_type portfolioSize;
+        portfolioSize = voxPortfolio.size();
+        int indSift[portfolioSize];
+        for (int i=0; i<portfolioSize; i++) {
+            indSift[i] = i;
+        }
+        
+        for (int i=0; i<4; i++) {
+            for (int j=0; j<portfolioSize; j++) {
+                for (int k=0; k<20; k++) {
+                    if (voxPortfolio[j].getVRCB()[i]==pnVRCB[4*k+i]) {
+                        break;
+                    }
+                    else if (k==19) {
+                        indSift[j] = -1;
+                    }
+                }
+            }
+        }
+        int* pindSift = indSift;
+        return pindSift;
     }
+    
+    
     
 //end class
 };
@@ -157,10 +158,22 @@ private:
 int main(int argc, const char * argv[])
 {
     
+    vector<Voxel> voxPortfolio = {Voxel(2,4,2,3,1),Voxel(2,1,1,1,1)};
+    
+    cout<<voxPortfolio[0].getVRCB()[0]<<"\n";
+    cout<<voxPortfolio[1].getVRCB()[1]<<"\n";
+    
+    vector<Voxel>::iterator pvox = voxPortfolio.begin();
+    cout<<pvox->getVRCB()[0]<<"\n";
+    pvox++;
+    cout<<pvox->getVRCB()[1]<<"\n";
+    
+    
+    
     //test: hexagonal to cartesian translation
-    int voxStamp[4]={2,2,2,2};
-    int stampNeighbors[80];
-    int *pstmpN= stampNeighbors;
+    int voxVRCB[4]={2,2,2,2};
+    int neighborsVRCB[80]; //will contain coordinates to voxels adjacent to voxVRCB
+    int *pnVRCB= neighborsVRCB;
     
     int transRule[3] = {-1,0,1};
     
@@ -168,25 +181,25 @@ int main(int argc, const char * argv[])
     //if (stmpV[1]%2 == 1)
     for(int i=0; i<3; i++) {
         if (i!=1) {
-            pstmpN[4*count+0] = voxStamp[0];
-            pstmpN[4*count+3] = voxStamp[3]+transRule[i];
-            pstmpN[4*count+1] = voxStamp[1];
-            pstmpN[4*count+2] = voxStamp[2];
+            pnVRCB[4*count+0] = voxVRCB[0];
+            pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
+            pnVRCB[4*count+1] = voxVRCB[1];
+            pnVRCB[4*count+2] = voxVRCB[2];
             count+=1;
         }
         
         for(int j=0; j<3; j++) {
             for(int k=0; k<2; k++) {
-                pstmpN[4*count+3] = voxStamp[3]+transRule[i];
-                pstmpN[4*count+1] = voxStamp[1]+transRule[j];
+                pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
+                pnVRCB[4*count+1] = voxVRCB[1]+transRule[j];
                 
-                if (voxStamp[1]%2 == 1) {
-                    pstmpN[4*count+2] = voxStamp[2]+transRule[k+1];
+                if (voxVRCB[1]%2 == 1) {
+                    pnVRCB[4*count+2] = voxVRCB[2]+transRule[k+1];
                 }
                 else {
-                    pstmpN[4*count+2] = voxStamp[2]+transRule[k];
+                    pnVRCB[4*count+2] = voxVRCB[2]+transRule[k];
                 }
-                pstmpN[4*count+0] = voxStamp[0];
+                pnVRCB[4*count+0] = voxVRCB[0];
                 count+=1;
             }
         }
@@ -194,38 +207,65 @@ int main(int argc, const char * argv[])
     
     for (int i=0; i<20; i++) {
         for(int j=0; j<4; j++) {
-            cout << pstmpN[4*i+j] << " ";
+            cout << pnVRCB[4*i+j] << " ";
             if (j==3) {
                 cout << "\n-------\n";
             }
         }
     }
+    cout<<"\n";
     
-    int vStamp1[4] = {2,4,2,3};
-    int vStamp2[4] = {2,1,2,1};
-    vector<Voxel> voxPortfolio = {Voxel(vStamp1,1),Voxel(vStamp2,1)};
+    vector<Voxel>::size_type portfolioSize;
+    portfolioSize = voxPortfolio.size();
+    
     //test: voxel sifter for getNeighbors
     vector<Voxel> voxSift = voxPortfolio;
     
+    
+    std::clock_t c_start1 = std::clock();
     for (int i=0; i<4; i++) {
         if (voxSift.size()!=0) {
             int j=0;
+            int n=0;
             while (j<voxSift.size()) {
                 for (int k=0; k<20; k++) {
-                    cout<<voxSift[j].voxStamp[i]<<"=="<<pstmpN[4*k+i]<<"\n";
-                    if (voxSift[j].voxStamp[i]==pstmpN[4*k+i]) {
-                        j+=1;
+                    if (voxSift[j].getVRCB()[i]==pnVRCB[4*k+i]) {
+                        j++;
                         break;
                     }
                     else if (k==19) {
                         voxSift.erase(voxSift.begin() + j);
-                        cout<<"Erased\n";
+                        cout<<"!ERASE!\n";
                         break;
                     }
+                    n++;
                 }
-            cout<<j+1<<"-------\n";
+                cout<<"-------------\n";
+            }
+            cout<<"-------------\n";
+        }
+    }
+    std::clock_t c_end1 = std::clock();
+    cout<<voxSift.size()<<"\n";
+    cout<<(c_end1-c_start1)<<"\n";
+
+    int indSift[portfolioSize];
+    for (int i=0; i<portfolioSize; i++) {
+        indSift[i] = i;
+    }
+    
+    for (int i=0; i<4; i++) {
+        for (int j=0; j<portfolioSize; j++) {
+            for (int k=0; k<20; k++) {
+                if (voxPortfolio[j].getVRCB()[i]==pnVRCB[4*k+i]) {
+                    break;
+                }
+                else if (k==19) {
+                    indSift[j] = -1;
+                }
             }
         }
     }
-    cout<<voxSift.size()<<"\n";
+    
+    
 }
