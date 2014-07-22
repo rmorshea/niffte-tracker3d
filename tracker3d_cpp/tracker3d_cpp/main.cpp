@@ -20,15 +20,16 @@ class Voxel
 {/*The basic data unit; represents pixels in 3 dimensions (two spatial and one temporal) and it's associated data.
   <data_member: description>
   VRCB: an array of four values corrisponding to the volume and coordinates of the voxel:
-    {volume, row (spatial), collumn(spatial), and bucket(temporal)}.
+    {volume (chamber), row (spatial), collumn(spatial), and bucket(temporal)}.
   ADC: The adc value is the magnitude of the signal recorded. */
 public:
-    Voxel(int vol, int col, int row, int bkt, int adc)
+    Voxel(int vol=-1, int col=-1, int row=-1, int bkt=-1, int adc=-1)
     {
-        int vrcb[4] = {vol, col, row, bkt};
-        VRCB = vrcb;
+        VRCB[0] = vol;
+        VRCB[1] = col;
+        VRCB[2] = row;
+        VRCB[3] = bkt;
         ADC = adc;
-        
     }
     
     int* getVRCB() {
@@ -40,7 +41,7 @@ public:
     }
     
 private:
-    int* VRCB;
+    int VRCB[4];
     int ADC;
 };
 
@@ -53,24 +54,22 @@ public:
     //Public Data Members:
     
     //Constructor:
-    Event(int eventId, int thresh) {
-        Id = eventId;         //give the event an Id number
-        gradThresh = thresh;    //initialize the gradient threshhold
+    Event(int eventId, int gradThresh, int dirThresh, vector<Voxel> voxPortfolio) {
+        //eventId gives the event an Id number
+        //gradThresh initializes the gradient threshhold
+        //dirThresh initialize the directional threshhold
+        //voxPortfolio contains all voxels in the event
     }
     
-    /*PublicMemberFunction(1):
-    /adds a voxel to the public data member voxPortfolio.*/
-    void addVoxel(int vol, int col, int row, int bkt, int adc) {
-        voxPortfolio.push_back(Voxel(vol, col, row, bkt, adc));
-    }
+    
     
 private:
     
-    int Id;
-    vector<Voxel> voxPortfolio;
-    
     //Private Data Members:
     int gradThresh;
+    int dirThresh;
+    int Id;
+    vector<Voxel> voxPortfolio;
     
     /*PrivateMemberFunction(1):
      using a specified voxVRCB as a refernce point, a collection
@@ -158,17 +157,7 @@ private:
 int main(int argc, const char * argv[])
 {
     
-    vector<Voxel> voxPortfolio = {Voxel(2,4,2,3,1),Voxel(2,1,1,1,1)};
-    
-    cout<<voxPortfolio[0].getVRCB()[0]<<"\n";
-    cout<<voxPortfolio[1].getVRCB()[1]<<"\n";
-    
-    vector<Voxel>::iterator pvox = voxPortfolio.begin();
-    cout<<pvox->getVRCB()[0]<<"\n";
-    pvox++;
-    cout<<pvox->getVRCB()[1]<<"\n";
-    
-    
+    vector<Voxel> voxPortfolio = {Voxel(2,1,1,1,1),Voxel(2,4,2,3,2)};
     
     //test: hexagonal to cartesian translation
     int voxVRCB[4]={2,2,2,2};
@@ -218,11 +207,10 @@ int main(int argc, const char * argv[])
     vector<Voxel>::size_type portfolioSize;
     portfolioSize = voxPortfolio.size();
     
+    std::clock_t c_start1 = std::clock();
     //test: voxel sifter for getNeighbors
     vector<Voxel> voxSift = voxPortfolio;
     
-    
-    std::clock_t c_start1 = std::clock();
     for (int i=0; i<4; i++) {
         if (voxSift.size()!=0) {
             int j=0;
@@ -235,37 +223,47 @@ int main(int argc, const char * argv[])
                     }
                     else if (k==19) {
                         voxSift.erase(voxSift.begin() + j);
-                        cout<<"!ERASE!\n";
                         break;
                     }
                     n++;
                 }
-                cout<<"-------------\n";
             }
-            cout<<"-------------\n";
         }
     }
     std::clock_t c_end1 = std::clock();
     cout<<voxSift.size()<<"\n";
-    cout<<(c_end1-c_start1)<<"\n";
-
+    cout<<(c_end1-c_start1)<<"\n\n";
+    
+    std::clock_t c_start2 = std::clock();
     int indSift[portfolioSize];
     for (int i=0; i<portfolioSize; i++) {
         indSift[i] = i;
     }
     
     for (int i=0; i<4; i++) {
-        for (int j=0; j<portfolioSize; j++) {
-            for (int k=0; k<20; k++) {
-                if (voxPortfolio[j].getVRCB()[i]==pnVRCB[4*k+i]) {
-                    break;
-                }
-                else if (k==19) {
-                    indSift[j] = -1;
+        int j=-1;
+        for (vector<Voxel>::iterator voxel = voxPortfolio.begin();
+             voxel!=voxPortfolio.end();
+             ++voxel) {
+            ++j;
+            if (indSift[j] != -1) {
+                for (int k=0; k<20; k++) {
+                    if (voxel->getVRCB()[i]==pnVRCB[4*k+i]) {
+                        break;
+                    }
+                    else if (k==19) {
+                        indSift[j] = -1;
+                    }
                 }
             }
         }
     }
     
+    std::clock_t c_end2 = std::clock();
+    cout<<(c_end2-c_start2)<<"\n";
     
+    for (int i=0; i<portfolioSize; ++i) {
+        cout<<indSift[i]<<", ";
+    }
+    cout<<"\n";
 }
