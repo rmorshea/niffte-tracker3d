@@ -25,7 +25,7 @@ class Voxel
     {volume (chamber), row (spatial), collumn(spatial), and bucket(temporal)}.
   ADC: The adc value is the magnitude of the signal recorded. */
 public:
-    Voxel(int vol=-1, int col=-1, int row=-1, int bkt=-1, int adc=-1)
+    Voxel(int vol, int col, int row, int bkt, int adc)
     {
         VRCB[0] = vol;
         VRCB[1] = col;
@@ -67,6 +67,10 @@ public:
     
     vector<Voxel>::iterator getPortfolioIter(int index=0) {
         return voxPortfolio.begin() + index;
+    }
+    
+    vector<Voxel> getPortfolio(int index=0) {
+        return voxPortfolio;
     }
     
 private:
@@ -126,6 +130,7 @@ private:
          the voxel from voxPortfolio. */
         vector<Voxel>::size_type portfolioSize;
         portfolioSize = voxPortfolio.size();
+        
         int indSift[portfolioSize];
         for (int i=0; i<portfolioSize; i++) {
             indSift[i] = i;
@@ -151,209 +156,223 @@ private:
     
 };
 
-class eventCache
+class eventDuct
 {/*Simple class which is used solely to to house events safely.
   Events can be added to a container and if it's desired an event
   iterator begining at the specified index can be obtained.*/
 public:
-    void addEvent(Event evnt) {
-        Container.push_back(evnt);
+    void lugAllEvents(string File, vector<Event>& container) {
+        string line;
+        char eventDelim = '#';
+        ifstream reader (File);
+        if (reader.is_open()) {
+            int i=-1;
+            while (getline(reader,line)) {
+                if (line[0] == eventDelim ) {
+                    container.push_back(Event(0,0));
+                    i++;
+                }
+                else {
+                    std::istringstream iss(line);
+                    int vrcb_adc[5];
+                    
+                    //while the iss is a number
+                    int j=0;
+                    while (iss >> vrcb_adc[j]) {j++;}
+                    Voxel vox = Voxel(vrcb_adc[0],vrcb_adc[1],vrcb_adc[2],vrcb_adc[3],vrcb_adc[4]);
+                    
+                    container[i].addVoxel(vox);
+                    //vector<Voxel> voxport = container[i].getPortfolio();
+                    
+                    
+                }
+            }
+            reader.close();
+        }
+        else cout << "Unable to open " << File << endl;
     }
     
-    vector<Event> getCacher(int index=0) {
-        return Container;
+    void lugEvent(string File, Event& container) {
+        //to be written...
     }
     
-private:
-    vector<Event> Container;
 };
 
-//utlity functions:
 
 
-
-
+//================================================================================================
+//================================================================================================
 
 
 
 int main(int argc, const char * argv[])
 {
-    /*
-    eventContainer cont;
-    cont.addEvent(Event(0,0));
-    cont.getEventIter(0)->addVoxel(Voxel(0,0,0,0,0));
-    cont.addEvent(Event(0,0));
-    cont.getEventIter(0)->addVoxel(Voxel(1,1,1,1,1));
-    cont.addEvent(Event(0,0));
-    cont.getEventIter(0)->addVoxel(Voxel(1,1,1,1,1));
-    
-    vector<Event>::iterator iter = cont.getEventIter(0);
-    vector<Voxel>::iterator voxiter = iter->getPortfolioIter();
-    cout<<voxiter->getADC();
-    voxiter++;
-    cout<<voxiter->getADC();
-     */
-    
     
     //test reading in data from text file
-    eventCache Container;
+    eventDuct Pipe;
+    vector<Event> EventCache;
+    vector<Event>& rEventCache = EventCache;
     
-    string line;
-    char eventDelim = '#';
-    string File = "/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt";
-    ifstream reader (File);
-    
-    if (reader.is_open()) {
-        int i=-1;
-        while (getline(reader,line)) {
-            if (line[0] != eventDelim ) {
-                
-                std::istringstream iss(line);
-                int vrcb_adc[5];
-                
-                //while the iss is a number
-                int j=0;
-                while (iss >> vrcb_adc[j]) { }
-                Voxel vox = Voxel(vrcb_adc[0],vrcb_adc[1],vrcb_adc[2],vrcb_adc[3],vrcb_adc[0]);
-                
-                Container.getEventIter(i)->addVoxel(vox);
-            }
-            else {
-                Container.addEvent(Event(0,0));
-                i++;
-            }
-        }
-        reader.close();
-    }
-    
-    else cout << "Unable to open " << File;
-    int count = 0;
-    for (vector<Event>::iterator it; it!= Container.end(); it++) {
-        count++;
-    }
-    cout<<count;
-    
+    Pipe.lugAllEvents("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", rEventCache);
     
     /*
-//------------------------------------------------------------------------------------------------
-//------------------------------------------------------------------------------------------------
+    cout<<EventCache.size()<<endl;
+    cout<<EventCache[1].getPortfolio().size()<<endl;
+    vector<Event>::iterator event = EventCache.begin();
+    vector<Voxel>::iterator voxel = event->getPortfolioIter();
     
-    //test: hexagonal to cartesian translation
-    int voxVRCB[4]={2,2,2,2};
-    int neighborsVRCB[80]; //will contain coordinates to voxels adjacent to voxVRCB
-    int *pnVRCB= neighborsVRCB;
-    
-    int transRule[3] = {-1,0,1};
-    
-    int count=0;
-    //if (stmpV[1]%2 == 1)
-    for(int i=0; i<3; i++) {
-        if (i!=1) {
-            pnVRCB[4*count+0] = voxVRCB[0];
-            pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
-            pnVRCB[4*count+1] = voxVRCB[1];
-            pnVRCB[4*count+2] = voxVRCB[2];
-            count+=1;
-        }
-        
-        for(int j=0; j<3; j++) {
-            for(int k=0; k<2; k++) {
-                pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
-                pnVRCB[4*count+1] = voxVRCB[1]+transRule[j];
-                
-                if (voxVRCB[1]%2 == 1) {
-                    pnVRCB[4*count+2] = voxVRCB[2]+transRule[k+1];
-                }
-                else {
-                    pnVRCB[4*count+2] = voxVRCB[2]+transRule[k];
-                }
-                pnVRCB[4*count+0] = voxVRCB[0];
-                count+=1;
-            }
-        }
-    }
-    
-    for (int i=0; i<20; i++) {
-        for(int j=0; j<4; j++) {
-            cout << pnVRCB[4*i+j] << " ";
-            if (j==3) {
-                cout << "\n-------\n";
-            }
-        }
-    }
-    cout<<"\n";
-    
-//------------------------------------------------------------------------------------------------
-//------------------------------------------------------------------------------------------------
-    
-    
-    //test: voxel sifter for getNeighbors
-    vector<Voxel>::size_type portfolioSize;
-    portfolioSize = voxPortfolio.size();
-    
-    
-    std::clock_t c_start1 = std::clock();
-    //test: using vector<Voxel>
-    vector<Voxel> voxSift = voxPortfolio;
+    voxel++;voxel++;
     
     for (int i=0; i<4; i++) {
-        if (voxSift.size()!=0) {
-            int j=0;
-            int n=0;
-            while (j<voxSift.size()) {
-                for (int k=0; k<20; k++) {
-                    if (voxSift[j].getVRCB()[i]==pnVRCB[4*k+i]) {
-                        j++;
-                        break;
-                    }
-                    else if (k==19) {
-                        voxSift.erase(voxSift.begin() + j);
-                        break;
-                    }
-                    n++;
-                }
-            }
-        }
-    }
-    std::clock_t c_end1 = std::clock();
-    cout<<voxSift.size()<<"\n";
-    cout<<(c_end1-c_start1)<<"\n\n";
-    
-//--------------------------
-    
-    //test: using int[n]
-    std::clock_t c_start2 = std::clock();
-    int indSift[portfolioSize];
-    for (int i=0; i<portfolioSize; i++) {
-        indSift[i] = i;
+        cout<<voxel->getVRCB()[i]<<" ";
     }
     
-    for (int i=0; i<4; i++) {
-        int j=-1;
-        for (vector<Voxel>::iterator voxel = voxPortfolio.begin();
-             voxel!=voxPortfolio.end();
-             ++voxel) {
-            ++j;
-            if (indSift[j] != -1) {
-                for (int k=0; k<20; k++) {
-                    if (voxel->getVRCB()[i]==pnVRCB[4*k+i]) {
-                        break;
-                    }
-                    else if (k==19) {
-                        indSift[j] = -1;
-                    }
-                }
-            }
-        }
-    }
-    
-    std::clock_t c_end2 = std::clock();
-    cout<<(c_end2-c_start2)<<"\n";
-    
-    for (int i=0; i<portfolioSize; ++i) {
-        cout<<indSift[i]<<", ";
-    }
-    cout<<"\n";
-    cout<<CLOCKS_PER_SEC;
+    cout<<endl<<voxel->getADC()<<endl;
     */
+    
+//------------------------------------------------------------------------------------------------
+    //unsigned long neighVectCalcTime[50000];
+    //unsigned long neighArryCalcTime[50000];
+    
+    int testnum = 0;
+    for (vector<Event>::iterator event = EventCache.begin();
+         event != EventCache.end();
+         event++) {
+        for (vector<Voxel>::iterator voxel = event->getPortfolio().begin();
+             voxel != event->getPortfolio().end();
+             voxel++) {
+            
+            /*
+            vector<Voxel>::size_type portfolioSize;
+            portfolioSize = event->getPortfolio().size();
+            
+            
+            
+            //test: hexagonal to cartesian translation
+            int* voxVRCB = voxel->getVRCB();
+            int neighborsVRCB[80]; //will contain coordinates to voxels adjacent to voxVRCB
+            int *pnVRCB= neighborsVRCB;
+            
+            int transRule[3] = {-1,0,1};
+            
+            int count=0;
+            //if (stmpV[1]%2 == 1)
+            for (int i=0; i<3; i++) {
+                if (i!=1) {
+                    pnVRCB[4*count+0] = voxVRCB[0];
+                    pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
+                    pnVRCB[4*count+1] = voxVRCB[1];
+                    pnVRCB[4*count+2] = voxVRCB[2];
+                    count+=1;
+                }
+                
+                for (int j=0; j<3; j++) {
+                    for (int k=0; k<2; k++) {
+                        pnVRCB[4*count+3] = voxVRCB[3]+transRule[i];
+                        pnVRCB[4*count+1] = voxVRCB[1]+transRule[j];
+                        
+                        if (voxVRCB[1]%2 == 1) {
+                            pnVRCB[4*count+2] = voxVRCB[2]+transRule[k+1];
+                        }
+                        else {
+                            pnVRCB[4*count+2] = voxVRCB[2]+transRule[k];
+                        }
+                        pnVRCB[4*count+0] = voxVRCB[0];
+                        count+=1;
+                    }
+                }
+            }
+            
+            for (int i=0; i<4; i++) {
+                cout<<voxVRCB[i]<<" ";
+            }
+            cout<<"\n-------\n";
+            
+            for (int i=0; i<20; i++) {
+                for (int j=0; j<4; j++) {
+                    cout << pnVRCB[4*i+j] << " ";
+                    if (j==3) {
+                        cout << "\n-------\n";
+                    }
+                }
+            }
+             
+            //------------------------------------------------------------------
+            
+            
+            //test: voxel sifter for getNeighbors
+             
+            //test: using vector<Voxel>
+            std::clock_t c_start1 = std::clock();
+            vector<Voxel> voxSift = event->getPortfolio();
+            
+            for (int i=0; i<4; i++) {
+                if (voxSift.size()!=0) {
+                    int j=0;
+                    int n=0;
+                    while (j<voxSift.size()) {
+                        for (int k=0; k<20; k++) {
+                            if (voxSift[j].getVRCB()[i]==pnVRCB[4*k+i]) {
+                                j++;
+                                break;
+                            }
+                            else if (k==19) {
+                                voxSift.erase(voxSift.begin() + j);
+                                break;
+                            }
+                            n++;
+                        }
+                    }
+                }
+            }
+            std::clock_t c_end1 = std::clock();
+            cout<<(c_end1-c_start1)<<"\n";
+            
+            neighVectCalcTime[testnum] = c_end1-c_start1;
+            
+            
+            
+            //---------------------------------
+            
+            
+             
+            //test: using int[n]
+            vector<Voxel> voxSift = event->getPortfolio();
+            //std::clock_t c_start2 = std::clock();
+            int indSift[portfolioSize];
+            for (int i=0; i<portfolioSize; i++) {
+                indSift[i] = i;
+            }
+            
+            for (int i=0; i<4; i++) {
+                for (int j=0; j<portfolioSize; j++) {
+                    if (indSift[j] != -1) {
+                        for (int k=0; k<20; k++) {
+                            if (voxSift[j].getVRCB()[i]==pnVRCB[4*k+i]) {
+                                break;
+                            }
+                            else if (k==19) {
+                                indSift[j] = -1;
+                                break;
+                            }
+                        }
+                    }
+                    ++j;
+                }
+            }
+            
+            //std::clock_t c_end2 = std::clock();
+            
+            //neighArryCalcTime[testnum] = c_end2-c_start2;
+            
+             
+            //---------
+            */
+            //cout<<testnum<<", ";//cout<<indSift[portfolioSize-1]<<"::"<<testnum<<", ";
+            testnum++;
+            
+        }
+    }
+    //------------------------------------------------------------------
+    cout<<testnum<<", ";
 }
