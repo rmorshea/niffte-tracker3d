@@ -42,6 +42,15 @@ public:
         return ADC;
     }
     
+    bool operator!=(const Voxel& other) {
+        return
+            this->VRCB[0] != other.VRCB[0] &&
+            this->VRCB[1] != other.VRCB[1] &&
+            this->VRCB[2] != other.VRCB[2] &&
+            this->VRCB[3] != other.VRCB[3] &&
+            this->ADC != other.ADC;
+    }
+    
 private:
     int VRCB[4];
     int ADC;
@@ -55,17 +64,23 @@ public:
     //Public Data Members:
     
     //Constructor:
-    Event(int gradThresh, int dirThresh) {
+    Event(int gradThresh, int dirThresh, bool touch=true) {
         //eventId determined by index position in eventContainer
         //gradThresh initializes the gradient threshhold
         //dirThresh initialize the directional threshhold
     }
     
     void addVoxel(Voxel vox) {
-        voxPortfolio.push_back(vox);
+        if (touch==true) {
+            voxPortfolio.push_back(vox);
+        }
     }
     
-    vector<Voxel>::iterator getPortfolioIter(int index=0) {
+    void closePortfolio() {
+        touch = false;
+    }
+    
+    vector<Voxel>::const_iterator getPortfolioIter(int index=0) {
         return voxPortfolio.begin() + index;
     }
     
@@ -73,10 +88,16 @@ public:
         return voxPortfolio;
     }
     
+    void makeTrajectories() {
+        
+        
+    }
+    
 private:
     
     //Private Data Members:
     vector<Voxel> voxPortfolio;
+    bool touch;
     int gradThresh;
     int dirThresh;
     int Id;
@@ -233,14 +254,16 @@ int main(int argc, const char * argv[])
 //------------------------------------------------------------------------------------------------
     //unsigned long neighVectCalcTime[50000];
     //unsigned long neighArryCalcTime[50000];
-    
     int testnum = 0;
+    
     for (vector<Event>::iterator event = EventCache.begin();
          event != EventCache.end();
-         event++) {
-        for (vector<Voxel>::iterator voxel = event->getPortfolio().begin();
-             voxel != event->getPortfolio().end();
-             voxel++) {
+         ++event) {
+        int inner_testnum = 0;
+        vector<Voxel> mylist = event->getPortfolio();
+        for (vector<Voxel>::iterator voxel = mylist.begin();
+             voxel != mylist.end();
+             ++voxel) {
             
             /*
             vector<Voxel>::size_type portfolioSize;
@@ -303,6 +326,7 @@ int main(int argc, const char * argv[])
             //test: voxel sifter for getNeighbors
              
             //test: using vector<Voxel>
+            
             std::clock_t c_start1 = std::clock();
             vector<Voxel> voxSift = event->getPortfolio();
             
@@ -327,18 +351,18 @@ int main(int argc, const char * argv[])
             }
             std::clock_t c_end1 = std::clock();
             cout<<(c_end1-c_start1)<<"\n";
+            */
             
-            neighVectCalcTime[testnum] = c_end1-c_start1;
-            
-            
+            //neighVectCalcTime[testnum] = c_end1-c_start1;
             
             //---------------------------------
             
             
              
             //test: using int[n]
-            vector<Voxel> voxSift = event->getPortfolio();
             //std::clock_t c_start2 = std::clock();
+            /*
+            vector<Voxel> voxSift = event->getPortfolio();
             int indSift[portfolioSize];
             for (int i=0; i<portfolioSize; i++) {
                 indSift[i] = i;
@@ -360,19 +384,22 @@ int main(int argc, const char * argv[])
                     ++j;
                 }
             }
-            
+            */
             //std::clock_t c_end2 = std::clock();
             
             //neighArryCalcTime[testnum] = c_end2-c_start2;
             
              
             //---------
-            */
+            
             //cout<<testnum<<", ";//cout<<indSift[portfolioSize-1]<<"::"<<testnum<<", ";
-            testnum++;
+            inner_testnum++;
             
         }
+        cout<<"Inner: "<<inner_testnum<<", "<<endl;
+        testnum++;
     }
+    cout<<"Outer:"<<testnum<<", "<<endl;
     //------------------------------------------------------------------
-    cout<<testnum<<", ";
+    return 0;
 }
