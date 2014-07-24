@@ -64,7 +64,7 @@ public:
     //Public Data Members:
     
     //Constructor:
-    Event(int gradThresh, int dirThresh, bool touch=true) {
+    Event(int gradThresh, int dirThresh) {
         //eventId determined by index position in eventContainer
         //gradThresh initializes the gradient threshhold
         //dirThresh initialize the directional threshhold
@@ -73,6 +73,9 @@ public:
     void addVoxel(Voxel vox) {
         if (touch==true) {
             voxPortfolio.push_back(vox);
+        }
+        else {
+            cout << "Portfolio has already been closed" << endl;
         }
     }
     
@@ -90,14 +93,13 @@ public:
     
     void makeTrajectories() {
         
-        
     }
     
 private:
     
     //Private Data Members:
     vector<Voxel> voxPortfolio;
-    bool touch;
+    bool touch = true;
     int gradThresh;
     int dirThresh;
     int Id;
@@ -190,6 +192,9 @@ public:
             int i=-1;
             while (getline(reader,line)) {
                 if (line[0] == eventDelim ) {
+                    if (i!=-1) {
+                        container[i].closePortfolio();
+                    }
                     container.push_back(Event(0,0));
                     i++;
                 }
@@ -252,20 +257,20 @@ int main(int argc, const char * argv[])
     */
     
 //------------------------------------------------------------------------------------------------
-    //unsigned long neighVectCalcTime[50000];
-    //unsigned long neighArryCalcTime[50000];
+    unsigned long neighVectCalcTime[18033];
+    unsigned long neighArryCalcTime[18033];
     int testnum = 0;
     
     for (vector<Event>::iterator event = EventCache.begin();
          event != EventCache.end();
          ++event) {
-        int inner_testnum = 0;
-        vector<Voxel> mylist = event->getPortfolio();
-        for (vector<Voxel>::iterator voxel = mylist.begin();
-             voxel != mylist.end();
+        
+        vector<Voxel> portfolio = event->getPortfolio();
+        for (vector<Voxel>::iterator voxel = portfolio.begin();
+             voxel != portfolio.end();
              ++voxel) {
             
-            /*
+            
             vector<Voxel>::size_type portfolioSize;
             portfolioSize = event->getPortfolio().size();
             
@@ -306,6 +311,7 @@ int main(int argc, const char * argv[])
                 }
             }
             
+            /*
             for (int i=0; i<4; i++) {
                 cout<<voxVRCB[i]<<" ";
             }
@@ -319,7 +325,7 @@ int main(int argc, const char * argv[])
                     }
                 }
             }
-             
+            */
             //------------------------------------------------------------------
             
             
@@ -350,19 +356,15 @@ int main(int argc, const char * argv[])
                 }
             }
             std::clock_t c_end1 = std::clock();
-            cout<<(c_end1-c_start1)<<"\n";
-            */
-            
-            //neighVectCalcTime[testnum] = c_end1-c_start1;
+            neighVectCalcTime[testnum] = c_end1-c_start1;
             
             //---------------------------------
             
             
              
             //test: using int[n]
-            //std::clock_t c_start2 = std::clock();
-            /*
-            vector<Voxel> voxSift = event->getPortfolio();
+            std::clock_t c_start2 = std::clock();
+            
             int indSift[portfolioSize];
             for (int i=0; i<portfolioSize; i++) {
                 indSift[i] = i;
@@ -384,22 +386,24 @@ int main(int argc, const char * argv[])
                     ++j;
                 }
             }
-            */
-            //std::clock_t c_end2 = std::clock();
             
-            //neighArryCalcTime[testnum] = c_end2-c_start2;
+            std::clock_t c_end2 = std::clock();
+            neighArryCalcTime[testnum] = c_end2-c_start2;
             
              
             //---------
             
-            //cout<<testnum<<", ";//cout<<indSift[portfolioSize-1]<<"::"<<testnum<<", ";
-            inner_testnum++;
+            testnum++;
             
         }
-        cout<<"Inner: "<<inner_testnum<<", "<<endl;
-        testnum++;
+
     }
-    cout<<"Outer:"<<testnum<<", "<<endl;
+    cout<<testnum<<" iterations completed"<<endl;
+    
+    fstream histoWrite;
+    histoWrite.open("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/sifterTimes.txt", fstream::out | fstream::trunc);
+    for (int i=0; i<18033; i++) {
+        histoWrite << neighVectCalcTime[i] << "\t" << neighArryCalcTime[i] << endl;
+    }
     //------------------------------------------------------------------
-    return 0;
 }
