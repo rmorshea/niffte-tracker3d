@@ -65,7 +65,7 @@ public:
     
     //Constructor:
     Event(int gradThresh, int dirThresh) {
-        touch = true;
+        touch = true; //whether or not the portfolio can be edited
         //eventId determined by index position in eventContainer
         //gradThresh initializes the gradient threshhold
         //dirThresh initialize the directional threshhold
@@ -87,9 +87,12 @@ public:
     
     void closePortfolio() {
         //upon closing a portfolio, voxels will be sorted
-        //from highest ADC to lowest.
+        //from highest ADC to lowest and the portfolio size
+        //will be saved.
         touch = false;
         sort(voxPortfolio.begin(), voxPortfolio.end(), compADC);
+        portfolioSize = voxPortfolio.size();
+        
     }
     
     vector<Voxel>::const_iterator getPortfolioIter(int index=0) const {
@@ -100,23 +103,62 @@ public:
         return voxPortfolio;
     }
     
-    void makeTrajectories() {
+    void findTrajectories() {
+        try {
+            if (touch==false) {
+                
+                
+                
+            }
+            else {
+                throw touch;
+            }
+        }
+        catch (bool tState) {
+            cout << "TouchError: Portfolio must be closed to find trajectories (touch == " << tState << ")\n";
+        }
+        
         
     }
     
 private:
     
-    //Private Data Members:
+    //PrivateClass:
+    class Trajectory {
+    public:
+        
+        void addMember (int index) {
+            trajectoryMembers.push_back(index);
+        }
+        
+        vector<int>::iterator getMemberIter (int index=0) {
+            return trajectoryMembers.begin() + index;
+        }
+        
+        vector<int> getMember () {
+            return trajectoryMembers;
+        }
+        
+    private:
+        vector<int> trajectoryMembers;
+    };
+    
+    //PrivateDataMembers:
     vector<Voxel> voxPortfolio;
-    bool touch;
+    unsigned long portfolioSize;
+    vector<Trajectory> trajLogBook;
     int gradThresh;
     int dirThresh;
+    bool touch;
     
+    /*PrivateMemberFunction(1/2):
+     sorting rule used to order voxels from highest to lowest ADC
+     value within the event portfolio. */
     static bool compADC (Voxel vox1, Voxel vox2) {
         return vox1.getADC() > vox2.getADC();
     }
     
-    /*PrivateMemberFunction(2):
+    /*PrivateMemberFunction(2/2):
      using a specified voxVRCB as a refernce point, a collection
      of its neighboring voxels is made and then returned. Handling
      the hexagonal geometry results in a maximum of 20 possible
@@ -310,7 +352,6 @@ int main(int argc, const char * argv[])
     cout<<Pipe.getFilePosition()<<", ";
     cout<<event0.getPortfolio().size()<<", ";
     cout<<event1.getPortfolio().size()<<"\n";
-    event0.addVoxel(Voxel(0,0,0,0,0));
     
     
 //------------------------------------------------------------------------------------------------
