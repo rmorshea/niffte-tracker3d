@@ -65,22 +65,32 @@ public:
     
     //Constructor:
     Event(int gradThresh, int dirThresh) {
+        touch = true;
         //eventId determined by index position in eventContainer
         //gradThresh initializes the gradient threshhold
         //dirThresh initialize the directional threshhold
     }
     
     void addVoxel(Voxel vox) {
-        voxPortfolio.push_back(vox);
+        try {
+            if (touch) {
+                voxPortfolio.push_back(vox);
+            }
+            else {
+                throw touch;
+            }
+        }
+        catch (bool tState) {
+            cout << "TouchError: Portfolio has already been closed (touch == " << tState << ")\n";
+        }
     }
     
-    /*void closePortfolio() {
+    void closePortfolio() {
         //upon closing a portfolio, voxels will be sorted
         //from highest ADC to lowest.
         touch = false;
         sort(voxPortfolio.begin(), voxPortfolio.end(), compADC);
-        
-    }*/
+    }
     
     vector<Voxel>::const_iterator getPortfolioIter(int index=0) const {
         return voxPortfolio.begin() + index;
@@ -98,9 +108,9 @@ private:
     
     //Private Data Members:
     vector<Voxel> voxPortfolio;
+    bool touch;
     int gradThresh;
     int dirThresh;
-    int Id;
     
     static bool compADC (Voxel vox1, Voxel vox2) {
         return vox1.getADC() > vox2.getADC();
@@ -186,13 +196,16 @@ class eventDuct
 public:
     
     eventDuct(int fPos = 0, char evntDlm = '#', int dlmInd = 0, int dlmThck = 1) {
-        savedFilePosition = fPos;
-        eventDelim = evntDlm;
-        delimIndex = dlmInd;
-        delimThickness = dlmThck;
+        savedFilePosition = fPos;  //starting position in the file
+        eventDelim = evntDlm;      //what character indicates the start new event
+        delimIndex = dlmInd;     //location of the event delimiter
+        delimThickness = dlmThck;   //how many lines is the delimiter
     }
     
     void lugAllEvents(string File, vector<Event> &container) {
+        //throws all events on file into a vector of events.
+        //after each event is loaded into the vector, the
+        //associated portfolio is closed.
         string line;
         ifstream reader (File);
         if (reader.is_open()) {
@@ -200,7 +213,7 @@ public:
             while (getline(reader,line)) {
                 if (line[delimIndex] == eventDelim) {
                     if (i!=-1) {
-                        //container[i].closePortfolio();
+                        container[i].closePortfolio();
                     }
                     container.push_back(Event(0,0));
                     i++;
@@ -237,7 +250,7 @@ public:
             
             while (getline(reader,line)) {
                 if (line[delimIndex] == eventDelim) {
-                    //container.closePortfolio();
+                    container.closePortfolio();
                     savedFilePosition = linecount+delimThickness;
                     break;
                 }
@@ -291,15 +304,13 @@ int main(int argc, const char * argv[])
     eventDuct Pipe;
     Event event0(0,0);
     Event event1(0,0);
-    vector<Event> EventCache;
-    vector<Event> &rEventCache = EventCache;
     Pipe.setFilePosition(1);
     Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event0);
     Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event1);
-    Pipe.lugAllEvents("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", rEventCache);
     cout<<Pipe.getFilePosition()<<", ";
     cout<<event0.getPortfolio().size()<<", ";
     cout<<event1.getPortfolio().size()<<"\n";
+    event0.addVoxel(Voxel(0,0,0,0,0));
     
     
 //------------------------------------------------------------------------------------------------
@@ -307,6 +318,11 @@ int main(int argc, const char * argv[])
 //------------------------------------------------------------------------------------------------
     
 /*
+    eventDuct testPipe;
+    vector<Event> EventCache;
+    vector<Event> &rEventCache = EventCache;
+    testPipe.lugAllEvents("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", rEventCache);
+ 
     unsigned long neighVectCalcTime[18033];
     unsigned long neighArryCalcTime[18033];
     int testnum = 0;
