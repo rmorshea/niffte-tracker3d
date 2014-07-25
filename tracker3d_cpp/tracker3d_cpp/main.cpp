@@ -60,7 +60,7 @@ private:
 class Event
 {
 public:
-    
+
     //Public Data Members:
     
     //Constructor:
@@ -71,23 +71,22 @@ public:
     }
     
     void addVoxel(Voxel vox) {
-        if (touch==true) {
-            voxPortfolio.push_back(vox);
-        }
-        else {
-            cout << "Portfolio has already been closed" << endl;
-        }
+        voxPortfolio.push_back(vox);
     }
     
-    void closePortfolio() {
+    /*void closePortfolio() {
+        //upon closing a portfolio, voxels will be sorted
+        //from highest ADC to lowest.
         touch = false;
-    }
+        sort(voxPortfolio.begin(), voxPortfolio.end(), compADC);
+        
+    }*/
     
-    vector<Voxel>::const_iterator getPortfolioIter(int index=0) {
+    vector<Voxel>::const_iterator getPortfolioIter(int index=0) const {
         return voxPortfolio.begin() + index;
     }
     
-    vector<Voxel> getPortfolio(int index=0) {
+    vector<Voxel> getPortfolio(int index=0) const {
         return voxPortfolio;
     }
     
@@ -99,12 +98,15 @@ private:
     
     //Private Data Members:
     vector<Voxel> voxPortfolio;
-    bool touch = true;
     int gradThresh;
     int dirThresh;
     int Id;
     
-    /*PrivateMemberFunction(1):
+    static bool compADC (Voxel vox1, Voxel vox2) {
+        return vox1.getADC() > vox2.getADC();
+    }
+    
+    /*PrivateMemberFunction(2):
      using a specified voxVRCB as a refernce point, a collection
      of its neighboring voxels is made and then returned. Handling
      the hexagonal geometry results in a maximum of 20 possible
@@ -175,8 +177,6 @@ private:
         return pindSift;
     }
     
-    
-    
 };
 
 class eventDuct
@@ -184,16 +184,23 @@ class eventDuct
   Events can be added to a container and if it's desired an event
   iterator begining at the specified index can be obtained.*/
 public:
-    void lugAllEvents(string File, vector<Event>& container) {
+    
+    eventDuct(int fPos = 0, char evntDlm = '#', int dlmInd = 0, int dlmThck = 1) {
+        savedFilePosition = fPos;
+        eventDelim = evntDlm;
+        delimIndex = dlmInd;
+        delimThickness = dlmThck;
+    }
+    
+    void lugAllEvents(string File, vector<Event> &container) {
         string line;
-        char eventDelim = '#';
         ifstream reader (File);
         if (reader.is_open()) {
             int i=-1;
             while (getline(reader,line)) {
-                if (line[0] == eventDelim ) {
+                if (line[delimIndex] == eventDelim) {
                     if (i!=-1) {
-                        container[i].closePortfolio();
+                        //container[i].closePortfolio();
                     }
                     container.push_back(Event(0,0));
                     i++;
@@ -218,9 +225,55 @@ public:
         else cout << "Unable to open " << File << endl;
     }
     
-    void lugEvent(string File, Event& container) {
-        //to be written...
+    void lugEvent(string File, Event &container) {
+        string line;
+        ifstream reader (File);
+        if (reader.is_open()) {
+            int linecount=0;
+            while (linecount < savedFilePosition) {
+                reader.ignore(numeric_limits<streamsize>::max(), '\n');
+                linecount++;
+            }
+            
+            while (getline(reader,line)) {
+                if (line[delimIndex] == eventDelim) {
+                    //container.closePortfolio();
+                    savedFilePosition = linecount+delimThickness;
+                    break;
+                }
+                else {
+                    std::istringstream iss(line);
+                    int vrcb_adc[5];
+                    
+                    //while the iss is a number
+                    int j=0;
+                    while (iss >> vrcb_adc[j]) {j++;}
+                    Voxel vox = Voxel(vrcb_adc[0],vrcb_adc[1],vrcb_adc[2],vrcb_adc[3],vrcb_adc[4]);
+                    //add voxel to container
+                    container.addVoxel(vox);
+                }
+                linecount++;
+            }
+        }
+        else {
+            cout << "Unable to open " << File << endl;
+        }
     }
+    
+    void setFilePosition (int line_number) {
+        savedFilePosition = line_number;
+    }
+    
+    int getFilePosition () {
+        return savedFilePosition;
+    }
+    
+private:
+    int savedFilePosition;
+    char eventDelim;
+    int delimIndex;
+    int delimThickness;
+    
     
 };
 
@@ -236,27 +289,24 @@ int main(int argc, const char * argv[])
     
     //test reading in data from text file
     eventDuct Pipe;
+    Event event0(0,0);
+    Event event1(0,0);
     vector<Event> EventCache;
-    vector<Event>& rEventCache = EventCache;
-    
+    vector<Event> &rEventCache = EventCache;
+    Pipe.setFilePosition(1);
+    Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event0);
+    Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event1);
     Pipe.lugAllEvents("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", rEventCache);
+    cout<<Pipe.getFilePosition()<<", ";
+    cout<<event0.getPortfolio().size()<<", ";
+    cout<<event1.getPortfolio().size()<<"\n";
     
-    /*
-    cout<<EventCache.size()<<endl;
-    cout<<EventCache[1].getPortfolio().size()<<endl;
-    vector<Event>::iterator event = EventCache.begin();
-    vector<Voxel>::iterator voxel = event->getPortfolioIter();
-    
-    voxel++;voxel++;
-    
-    for (int i=0; i<4; i++) {
-        cout<<voxel->getVRCB()[i]<<" ";
-    }
-    
-    cout<<endl<<voxel->getADC()<<endl;
-    */
     
 //------------------------------------------------------------------------------------------------
+//------ Testing vector vs array sorting of neighbor voxels --------------------------------------
+//------------------------------------------------------------------------------------------------
+    
+/*
     unsigned long neighVectCalcTime[18033];
     unsigned long neighArryCalcTime[18033];
     int testnum = 0;
@@ -270,11 +320,8 @@ int main(int argc, const char * argv[])
              voxel != portfolio.end();
              ++voxel) {
             
-            
             vector<Voxel>::size_type portfolioSize;
             portfolioSize = event->getPortfolio().size();
-            
-            
             
             //test: hexagonal to cartesian translation
             int* voxVRCB = voxel->getVRCB();
@@ -311,7 +358,7 @@ int main(int argc, const char * argv[])
                 }
             }
             
-            /*
+     
             for (int i=0; i<4; i++) {
                 cout<<voxVRCB[i]<<" ";
             }
@@ -325,7 +372,7 @@ int main(int argc, const char * argv[])
                     }
                 }
             }
-            */
+     
             //------------------------------------------------------------------
             
             
@@ -405,5 +452,11 @@ int main(int argc, const char * argv[])
     for (int i=0; i<18033; i++) {
         histoWrite << neighVectCalcTime[i] << "\t" << neighArryCalcTime[i] << endl;
     }
-    //------------------------------------------------------------------
+*/
+    
+//------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------
+    
+    
+    return 0;
 }
