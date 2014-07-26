@@ -42,15 +42,6 @@ public:
         return ADC;
     }
     
-    bool operator!=(const Voxel& other) {
-        return
-            this->VRCB[0] != other.VRCB[0] &&
-            this->VRCB[1] != other.VRCB[1] &&
-            this->VRCB[2] != other.VRCB[2] &&
-            this->VRCB[3] != other.VRCB[3] &&
-            this->ADC != other.ADC;
-    }
-    
 private:
     int VRCB[4];
     int ADC;
@@ -64,14 +55,15 @@ public:
     //Public Data Members:
     
     //Constructor:
-    Event(int gradThresh, int dirThresh) {
-        touch = true; //whether or not the portfolio can be edited
-        //eventId determined by index position in eventContainer
-        //gradThresh initializes the gradient threshhold
-        //dirThresh initialize the directional threshhold
+    Event(double grdthrsh, double drthrsh) {
+        touch = true;          //touch: whether or not the portfolio can be edited
+        gradThresh = grdthrsh;   //gradThresh: initializes the gradient threshhold
+        dirThresh = drthrsh;   //dirThresh: initializes the directional threshhold
     }
     
     void addVoxel(Voxel vox) {
+        //adds a voxel to the event portfolio as long as it hasn't
+        //already been closed. If it is closed an error is thown.
         try {
             if (touch) {
                 voxPortfolio.push_back(vox);
@@ -88,7 +80,8 @@ public:
     void closePortfolio() {
         //upon closing a portfolio, voxels will be sorted
         //from highest ADC to lowest and the portfolio size
-        //will be saved.
+        //will be saved and the ability to edit the portfolio
+        //will be forfitted by setting touch=false
         touch = false;
         sort(voxPortfolio.begin(), voxPortfolio.end(), compADC);
         portfolioSize = voxPortfolio.size();
@@ -96,28 +89,84 @@ public:
     }
     
     vector<Voxel>::const_iterator getPortfolioIter(int index=0) const {
+        //returns an iterator for the event portfolio
         return voxPortfolio.begin() + index;
     }
     
-    vector<Voxel> getPortfolio(int index=0) const {
+    const vector<Voxel> viewPortfolio(int index=0) const {
+        //returns an uneditable version of the event portfolio
         return voxPortfolio;
     }
     
-    void findTrajectories() {
+    vector<Voxel> getPortfolio(int index=0) {
+        //returns an editable version of the event portfolio
+        //if the portfolio has not been closed
         try {
-            if (touch==false) {
-                
-                
-                
+            if (touch) {
+                return voxPortfolio;
             }
             else {
                 throw touch;
             }
         }
         catch (bool tState) {
+            cout << "TouchError: Portfolio has already been closed (touch == " << tState << ")\n";
+            vector<Voxel> X;
+            return X;
+        }
+    }
+    
+    
+    void findTrajectories() {
+        try {
+            if (touch==false) {
+                
+                int prtflio[portfolioSize];
+                for (int i=0; i<portfolioSize; i++) {
+                    prtflio[i] = i;
+                }
+                
+                int trajOrigin=0;
+                int numVoxelsUsed=0;
+                while (numVoxelsUsed != portfolioSize) {
+                    
+                    if (prtflio[trajOrigin] != -1) {
+                        Trajectory traj;
+                        int* neighbrs = getNeighbors(voxPortfolio[trajOrigin].getVRCB());
+                        
+                        traj.addMember(trajOrigin);
+                        numVoxelsUsed++;
+                        
+                        int nextVox = -5; //arbitrary value not equal to -1
+                        while (nextVox != -1) {
+                            
+                            for (int j=0; j<portfolioSize; j++) {
+                                int candidate = neighbrs[j];
+                                if (candidate != -1) {
+                                    double adcThresh = gradThresh * voxPortfolio[candidate].getADC();
+                                    int grad = abs(voxPortfolio[trajOrigin].getADC()-voxPortfolio[candidate].getADC());
+                                    if ( grad <= adcThresh) {
+                                        
+                                    }
+                                }
+                            }
+                            
+                        }
+                    }
+                    trajOrigin++;
+                }
+            }
+                
+        }
+
+        catch (bool tState) {
             cout << "TouchError: Portfolio must be closed to find trajectories (touch == " << tState << ")\n";
         }
         
+    }
+    
+    
+    void resolveMergePoints() {
         
     }
     
@@ -126,29 +175,45 @@ private:
     //PrivateClass:
     class Trajectory {
     public:
+        Trajectory() {
+            MergePoint = -1;
+        }
         
         void addMember (int index) {
             trajectoryMembers.push_back(index);
+        }
+        
+        void setMergePoint(int index) {
+            MergePoint = index;
         }
         
         vector<int>::iterator getMemberIter (int index=0) {
             return trajectoryMembers.begin() + index;
         }
         
-        vector<int> getMember () {
+        vector<int> getMembers () {
             return trajectoryMembers;
         }
         
+        int getMergePoint() {
+            return MergePoint;
+        }
+        
+        
+        
     private:
         vector<int> trajectoryMembers;
+        int MergePoint;
+        double avgADC;
+        double avgDir;
     };
     
     //PrivateDataMembers:
     vector<Voxel> voxPortfolio;
     unsigned long portfolioSize;
     vector<Trajectory> trajLogBook;
-    int gradThresh;
-    int dirThresh;
+    double gradThresh;
+    double dirThresh;
     bool touch;
     
     /*PrivateMemberFunction(1/2):
@@ -347,8 +412,8 @@ int main(int argc, const char * argv[])
     Event event0(0,0);
     Event event1(0,0);
     Pipe.setFilePosition(1);
-    Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event0);
-    Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event1);
+    Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event0); //insert your file path here
+    Pipe.lugEvent("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", event1); //insert your file path here
     cout<<Pipe.getFilePosition()<<", ";
     cout<<event0.getPortfolio().size()<<", ";
     cout<<event1.getPortfolio().size()<<"\n";
@@ -358,11 +423,11 @@ int main(int argc, const char * argv[])
 //------ Testing vector vs array sorting of neighbor voxels --------------------------------------
 //------------------------------------------------------------------------------------------------
     
-/*
+
     eventDuct testPipe;
     vector<Event> EventCache;
     vector<Event> &rEventCache = EventCache;
-    testPipe.lugAllEvents("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", rEventCache);
+    testPipe.lugAllEvents("/Users/RyanMorshead/Coding/repos/niffte-tracker3d/tracker3d_cpp/niffte_data.txt", rEventCache); //insert your file path here
  
     unsigned long neighVectCalcTime[18033];
     unsigned long neighArryCalcTime[18033];
@@ -372,13 +437,13 @@ int main(int argc, const char * argv[])
          event != EventCache.end();
          ++event) {
         
-        vector<Voxel> portfolio = event->getPortfolio();
+        vector<Voxel> portfolio = event->viewPortfolio();
         for (vector<Voxel>::iterator voxel = portfolio.begin();
              voxel != portfolio.end();
              ++voxel) {
             
             vector<Voxel>::size_type portfolioSize;
-            portfolioSize = event->getPortfolio().size();
+            portfolioSize = event->viewPortfolio().size();
             
             //test: hexagonal to cartesian translation
             int* voxVRCB = voxel->getVRCB();
@@ -415,7 +480,7 @@ int main(int argc, const char * argv[])
                 }
             }
             
-     
+            /*
             for (int i=0; i<4; i++) {
                 cout<<voxVRCB[i]<<" ";
             }
@@ -429,7 +494,8 @@ int main(int argc, const char * argv[])
                     }
                 }
             }
-     
+            */
+            
             //------------------------------------------------------------------
             
             
@@ -438,7 +504,7 @@ int main(int argc, const char * argv[])
             //test: using vector<Voxel>
             
             std::clock_t c_start1 = std::clock();
-            vector<Voxel> voxSift = event->getPortfolio();
+            vector<Voxel> voxSift = event->viewPortfolio();
             
             for (int i=0; i<4; i++) {
                 if (voxSift.size()!=0) {
@@ -509,7 +575,7 @@ int main(int argc, const char * argv[])
     for (int i=0; i<18033; i++) {
         histoWrite << neighVectCalcTime[i] << "\t" << neighArryCalcTime[i] << endl;
     }
-*/
+
     
 //------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------
