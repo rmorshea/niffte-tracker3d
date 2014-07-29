@@ -100,7 +100,7 @@ public:
     
     vector<Voxel> getPortfolio(int index=0) {
         //returns an editable version of the event portfolio
-        //if the portfolio has not been closed
+        //if the portfolio has not been closed.
         try {
             if (touch) {
                 return voxPortfolio;
@@ -116,7 +116,8 @@ public:
         }
     }
     
-    
+//! Only some of the findTrajectories is applicable.
+//! See the README file for more information.
     void findTrajectories() {
         try {
             if (touch==false) {
@@ -131,22 +132,30 @@ public:
                 while (numVoxelsUsed != portfolioSize) {
                     
                     if (prtflio[trajOrigin] != -1) {
-                        Trajectory traj;
                         int* neighbrs = getNeighbors(voxPortfolio[trajOrigin].getVRCB());
                         
-                        traj.addMember(trajOrigin);
+                        Trajectory traj(trajOrigin, voxPortfolio[trajOrigin].getADC());
                         numVoxelsUsed++;
                         
                         int nextVox = -5; //arbitrary value not equal to -1
                         while (nextVox != -1) {
-                            
                             for (int j=0; j<portfolioSize; j++) {
+                                //iterate through neighbors
                                 int candidate = neighbrs[j];
                                 if (candidate != -1) {
+                                    //if the candidate is actually a neighbor (-1 implies not neighbor)
+                                    //then run threshold checks on it.
                                     double adcThresh = gradThresh * voxPortfolio[candidate].getADC();
                                     int grad = abs(voxPortfolio[trajOrigin].getADC()-voxPortfolio[candidate].getADC());
-                                    if ( grad <= adcThresh) {
-                                        
+                                    if (grad <= adcThresh) {
+                                        //if the gradient is smaller than some percent (controlled be gradThresh)
+                                        //of the ADC value then the neighbor passes this test.
+                                        if (dirCheck()) {
+                                            //if not the begining of trajectory run directional test
+                                        }
+                                    }
+                                    else {
+                                        neighbrs[j] = -1;
                                     }
                                 }
                             }
@@ -172,15 +181,33 @@ public:
     
 private:
     
+    //PrivateDataMembers(1/2):
+    vector<Voxel> voxPortfolio;
+    unsigned long portfolioSize;
+    
     //PrivateClass:
     class Trajectory {
     public:
-        Trajectory() {
+        Trajectory(int index, int adc) {
+            trajectoryMembers.push_back(index);
             MergePoint = -1;
+            avgADC = adc;
+            avgDir[0] = 0;
+            avgDir[1] = 0;
+            avgDir[2] = 0;
+            avgDir[3] = 0;
         }
         
-        void addMember (int index) {
+        void addMember (int index, int adc, int* dir) {
             trajectoryMembers.push_back(index);
+            if (avgADC !=0) {
+                double length = trajectoryMembers.size();
+                avgADC = avgADC*(length-1)/length + adc/length;
+            }
+            else {
+                avgADC = adc;
+            }
+            
         }
         
         void setMergePoint(int index) {
@@ -205,25 +232,23 @@ private:
         vector<int> trajectoryMembers;
         int MergePoint;
         double avgADC;
-        double avgDir;
+        double avgDir[4];
     };
     
-    //PrivateDataMembers:
-    vector<Voxel> voxPortfolio;
-    unsigned long portfolioSize;
+    //PrivateDataMembers(2/2):
     vector<Trajectory> trajLogBook;
     double gradThresh;
     double dirThresh;
     bool touch;
     
-    /*PrivateMemberFunction(1/2):
+    /*PrivateMemberFunction(1/3):
      sorting rule used to order voxels from highest to lowest ADC
      value within the event portfolio. */
     static bool compADC (Voxel vox1, Voxel vox2) {
         return vox1.getADC() > vox2.getADC();
     }
     
-    /*PrivateMemberFunction(2/2):
+    /*PrivateMemberFunction(2/3):
      using a specified voxVRCB as a refernce point, a collection
      of its neighboring voxels is made and then returned. Handling
      the hexagonal geometry results in a maximum of 20 possible
@@ -292,6 +317,10 @@ private:
         }
         int* pindSift = indSift;
         return pindSift;
+    }
+    
+    bool dirCheck(int* vcrb) {
+        
     }
     
 };
