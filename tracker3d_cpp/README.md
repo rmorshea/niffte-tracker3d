@@ -1,5 +1,5 @@
 ###3-D Trajectory Generation in Hexagonal Geometry
-#####author: Ryan Morshead  
+######author: Ryan Morshead  
 Groups discrete data events into directional trajectories in a 3-D space.
 Based on Neutron Induced Fission Fragment Tracking Experiment (NIFFTE) time projection chamber data.
 This is C++ interpretation of:
