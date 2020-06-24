@@ -173,14 +173,14 @@ class Event(object):
         In: mergethresh is an absolute parameter similar to dirthresh in makeTrajectories.
         """
         counter = 0
-        
+
         #breaks after no merge activity has occured
         loop = True
         while loop:
             loop = False
             numtraj = len(self.traj)
             #for every trajectory, compare against all other trajectories in event
-            for x in range(numtraj):
+            for _ in range(numtraj):
                 t2 = self.traj.pop(0)
                 tdir = t2.getDir()
                 merged = False
@@ -190,7 +190,7 @@ class Event(object):
                     t = self.traj[i]
                     #check the unsigned direction agains the threshold, AND check if either trajectory's head or tail are closely located
                     if t.checkDirReversible(tdir, mergethresh) and (voxDistance(t.getHead(), t2.getHead()) < 10 or voxDistance(t.getTail(), t2.getHead()) < 10 or voxDistance(t.getHead(), t2.getTail()) < 10 or voxDistance(t.getTail(), t2.getTail()) < 10):
-                            
+
                         t.merge(t2)
                         merged = True
                         loop = True
@@ -239,9 +239,9 @@ class Trajectory(object):
         self.spine.append(vox)
         self.tail = vox
         self.directions.append(getGradient(self.spine[-2], [self.spine[-1]])[self.spine[-1]][0])
-        self.du = sum([v[0] for v in self.directions]) / float(len(self.directions))
-        self.dv = sum([v[1] for v in self.directions]) / float(len(self.directions))
-        self.dw = sum([v[2] for v in self.directions]) / float(len(self.directions))
+        self.du = sum(v[0] for v in self.directions) / float(len(self.directions))
+        self.dv = sum(v[1] for v in self.directions) / float(len(self.directions))
+        self.dw = sum(v[2] for v in self.directions) / float(len(self.directions))
     
     def merge(self, tra):
         """
@@ -271,8 +271,7 @@ class Trajectory(object):
         """
         Returns all members, spine and flesh
         """
-        all = []
-        all.extend(self.flesh)
+        all = list(self.flesh)
         all.extend(self.spine)
         return all
     
@@ -371,9 +370,7 @@ def neighborCheck(avox, bvox):
     """
     Check if two voxels are neighbors of each other
     """
-    if len(listNeighbors([avox], bvox)) == 1:
-        return True
-    else: return False
+    return len(listNeighbors([avox], bvox)) == 1
     
 def voxDistance(avox, bvox):
     """
@@ -391,13 +388,13 @@ def getGradient(vox, neigh):
     Creates a gradient dictionary for an input voxel and a list of its neighbors. Non-neighbor gradient is untested.
     Dictionary uses the neighbor voxel as keys with tuple values ((du,dv,dw), dE)
     """
-    grad = dict()
+    grad = {}
     for v in neigh:
         dE = vox.getVal() - v.getVal()
         du = vox.getID()[1] - v.getID()[1]
         dv = vox.getID()[2] - v.getID()[2]
         dw = vox.getID()[3] - v.getID()[3]
-        
+
         grad[v] = (du,dv,dw), dE
     return grad
 
@@ -423,29 +420,25 @@ def plotEvent(ev, eventnum, trajcount, usedcount, orphancount, orphansOn, filena
 
     fig = plt.figure(1, figsize=(10,8))
     ax = fig.add_subplot(1,1,1, projection = '3d')
-    
+
     #Hardcode colors of the first 8 trajectories. This should usually be enough
     colors = ["red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink"]
     for i, t in enumerate(ev.getTrajectories()):
         evda = voxelsToArray(t.getMembers())
         #if there are too many trajectories, prevent errors by giving them brown color
-        if i > 7:
-            tcolor = 'brown'
-        else :
-            tcolor = colors[i]
-        
+        tcolor = 'brown' if i > 7 else colors[i]
         p = ax.scatter(evda[1], evda[2], evda[3], s=2*evda[4], linewidth=0, color=tcolor)
-    
+
     #Orphans are optional, switched from input
     if orphansOn:
         evda = voxelsToArray(ev.getOrphans())
         tcolor = 'gray'
         p = ax.scatter(evda[1], evda[2], evda[3], s=2*evda[4], linewidth=0, color=tcolor)
-    
+
     plt.xlim(10, 50)
     plt.ylim(10, 50)
     ax.set_zlim3d(10,50)
-    
+
     #The title holds all the pertinent run information. Soem of this could probably be derived from ev instead of forcefed. 
     ti = "Event " + str(eventnum) + "\n\n" + "Trajectories: " + str(trajcount) + "\n" + "Used Voxels: " + str(usedcount) + "\n" + "Orphans: " + str(orphancount)
     plt.title(ti, horizontalalignment='left', x=.1)
@@ -453,7 +446,7 @@ def plotEvent(ev, eventnum, trajcount, usedcount, orphancount, orphansOn, filena
     ax.set_xlabel('Row')
     ax.set_ylabel("Column")
     ax.set_zlabel('Bucket')
-    
+
     plt.savefig(filename)
     plt.close()
     
