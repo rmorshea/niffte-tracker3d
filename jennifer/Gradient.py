@@ -12,8 +12,7 @@ from operator import attrgetter
 def CloseEnough(this,that):
     if (that.row < this.row-1 or that.row > this.row+1): return False
     if (that.column < this.column-1 or that.column > this.column+1): return False
-    if (that.bucket < this.bucket+1 or that.bucket > this.bucket+1): return False
-    return True
+    return that.bucket >= this.bucket+1 and that.bucket <= this.bucket+1
     
 def Neighbor(currentVoxel,partner):
     """return true if the partner voxel is the neighbor voxel we

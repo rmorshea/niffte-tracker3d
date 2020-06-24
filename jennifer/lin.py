@@ -7,8 +7,7 @@ y_meas = y_true + 0.2*random.randn(len(x))
 
 def residuals(p,y,x):
     m,b = p
-    err = y-m*x+b
-    return err
+    return y-m*x+b
 
 def peval(x, p):
     return p[0]*x+p[1]

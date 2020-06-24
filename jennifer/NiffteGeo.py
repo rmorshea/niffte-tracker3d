@@ -41,10 +41,9 @@ def MapVoxeltoXYZ(voxel):
     fNumberOfBuckets = int(fDriftDistance * fClockRate / fDriftSpeed) # number of buckets per volume
     z = (fDriftDistance - float(voxel.bucket) + 0.5) * fDriftDistance/fNumberOfBuckets
 
-    if (voxel.volume == 0):
+    if voxel.volume == 0:
         z = -z
-    if (voxel.volume == 1):
-       x = -x
+    elif voxel.volume == 1:
+        x = -x
 
-    point = sp.SpacePoint(x,y,z,voxel.adc)
-    return point
+    return sp.SpacePoint(x,y,z,voxel.adc)

@@ -28,13 +28,10 @@ class SpacePoint(object):
       	  return self.x*other.x+self.y*other.y+self.z*other.z
 
       def subtract(self,other):
-      	  res = SpacePoint(self.x-other.x,self.y-other.y,self.z-other.z,self.wgt)
-      	  return res
+            return SpacePoint(self.x-other.x,self.y-other.y,self.z-other.z,self.wgt)
 
       def add(self,other):
-      	  res = SpacePoint(self.x+other.x,self.y+other.y,self.z+other.z,self.wgt)
-      	  return res
+            return SpacePoint(self.x+other.x,self.y+other.y,self.z+other.z,self.wgt)
 
       def scale(self,val):
-      	  res = SpacePoint(self.x*val,self.y*val,self.z*val,self.wgt)
-      	  return res
+            return SpacePoint(self.x*val,self.y*val,self.z*val,self.wgt)
